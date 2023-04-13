@@ -4,22 +4,30 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 
-class element_has_forgot_password(object):
+class element_has_tag(object):
     """
-    Expectation for checking element that has particular string inside anchor tag
+    Expectation for checking element that has particular string inside specified HTML tag
     """
 
     def __init__(self, element_locator, anchor_text):
-        self.element_locator = element_locater # (By.TAG_NAME, "a")
+        self.element_locator = element_locator # (By.TAG_NAME, "<tag type ex: 'a' or 'input'>")
         self.anchor_text = anchor_text
     
     def __call__(self, browser):
-        elements = browser.find_elements(*self.element_locator)
+        # element = browser.find_element(*self.element_locator)
+        # if self.anchor_text == element.accessible_name:
+        #     return element
+        # else:
+        #     return False
+
+        elements = browser.find_elements(self.element_locator[0], self.element_locator[1])
+        # purge list of empty strings to prevent selenium timeout error for large amount of elements returned
+        elements = [el for el in elements if len(el.accessible_name) > 1]
         for e in elements:
-            if anchor_text == e.accessible_name:
+            if e.accessible_name == self.anchor_text:
                 return e
-        else:
-            return False
+            else:
+                return False
 
 class forgotPwd:
     def __init__(self, repeat_num, username):
@@ -34,7 +42,6 @@ class forgotPwd:
         driver_path = '/Users/jalen/.cache/selenium/chromedriver/win32/111.0.5563.64'
         
     def filter_page_elements(self, browser, tag_type, string_filter):
-        # test commit
         web_element_list = []
         web_element_list = browser.find_elements(By.TAG_NAME, tag_type)
         found_element = None
@@ -50,26 +57,39 @@ class forgotPwd:
     def click_forgot_password(self):
         success_counter = 0
         repeat_this = self.repeat_num
+        username = self.username
         while repeat_this:
             if repeat_this == success_counter:
+
                 break
             browser = webdriver.Chrome()
             browser.get("https://instagram.com")
 
             wait = WebDriverWait(browser, 10)
-            forgot_pwd_button = wait.until(element_has_forgot_password(By.TAG_NAME, "a"), "Forgot password?")
+            forgot_pwd_button = wait.until(element_has_tag((By.TAG_NAME, "a"), "Forgot password?"))
+            forgot_pwd_button.click()
             # forgot_pwd_button = self.filter_page_elements(browser, "a", "Forgot password?")
 
-            username_form = self.filter_page_elements(browser, "input", "Email, Phone, or Username")
+            wait = WebDriverWait(browser, 10)
+            username_form = wait.until(element_has_tag((By.TAG_NAME, "input"), "Email, Phone, or Username"))
             username_form.send_keys(f"{username}")
 
-            send_login_link_button = self.filter_page_elements(browser, "div", "Send login link")
+            # username_form = self.filter_page_elements(browser, "input", "Email, Phone, or Username")
+            # username_form.send_keys(f"{username}")
+
+            wait = WebDriverWait(browser, 10)
+            send_login_link_button = wait.until(element_has_tag((By.TAG_NAME, "div"), "Send login link"))
             send_login_link_button.click()
+
+            wait = WebDriverWait(browser, 10)
+            login_confirm_text = wait.until(element_has_tag((By.TAG_NAME, "h2"), "Confirm it's you to Login"))
+            # send_login_link_button = self.filter_page_elements(browser, "div", "Send login link")
+            # send_login_link_button.click()
 
             success_counter += 1
             
         # click_output = f"Button clicked {button_click_counter} times"
-        completion_output = "Success"
+        completion_output = f"Successes: {success_counter}"
 
         return completion_output
 
